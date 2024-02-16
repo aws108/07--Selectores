@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Region, smallCountry } from '../interfaces/country.interfaces';
-import { Observable, of, tap } from 'rxjs';
+import { Country, Region, smallCountry} from '../interfaces/country.interfaces';
+import { Observable, map, of, tap } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
 @Injectable({
@@ -24,15 +24,27 @@ export class CountriesService {
     return [...this._regions]; //1
   }
 
-  getCountriesByRegion(region: Region): Observable<smallCountry[]>{
+  getCountriesByRegion(region: Region): Observable<any[]>{
     if (!region) return of ([]); //con el of, devuelves un observable, devuelves un array vacío
 
     const url: string = `${ this.baseUrl}/region/${region}?fields=cca3,name,borders`;
     
-    return this.http.get<smallCountry[]>(url).pipe(tap (response => console.log('respuesta',response)))
+    return this.http.get<Country[]>(url).pipe(
+      map ( countries => countries.map(country => ({
+        name: country.name.common,
+        cca3: country.cca3,
+        borders: country.borders ?? []
+      })) ), //2
+      )
+  }
+
+  getCountryBuAlphaCode(alphaCode: string): Observable<smallCountry>{
+    return;
   }
 
 }
 
 
 //1-> En este caso muta la relación que tiene con la propiedad original, para que nadie le mute los datos
+//2-> El primer map es una función de RXJS para transformar datos y elsegundo, es el que te hace un nuevo array
+// Crea un nuevo array cuyo contenido es un objeto con los datos de name, cca3 y borders
