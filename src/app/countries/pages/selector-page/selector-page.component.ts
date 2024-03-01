@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CountriesService } from '../../services/countries.service';
-import { Region, smallCountry } from '../../interfaces/country.interfaces';
-import { switchMap, tap } from 'rxjs';
+import { Region, SmallCountry } from '../../interfaces/country.interfaces';
+import { filter, switchMap, tap } from 'rxjs';
 
 @Component({
   selector: 'app-selector-page',
@@ -11,7 +11,8 @@ import { switchMap, tap } from 'rxjs';
 })
 export class SelectorPageComponent implements OnInit {
 
-  countriesByRegion: smallCountry[] = [];
+  countriesByRegion: SmallCountry[] = [];
+  bordersByCountry: SmallCountry[] = [];
 
   myForm: FormGroup = this.fb.group({
     region: ['', Validators.required],
@@ -35,6 +36,7 @@ export class SelectorPageComponent implements OnInit {
   onRegionChange(): void {
     this.myForm.get('region')?.valueChanges.pipe(
       tap( () => this.myForm.get('country')!.setValue('')), //3
+      tap( () => this.bordersByCountry = []), // cuando carga la región, los bordes se limpian
       switchMap(region => this.countriesService.getCountriesByRegion(region))).subscribe( countries => { //2
       this.countriesByRegion = countries;
     });
@@ -43,8 +45,10 @@ export class SelectorPageComponent implements OnInit {
   onCountryChange():void {
     this.myForm.get('country')?.valueChanges.pipe(
       tap( () => this.myForm.get('border')!.setValue('')), //3
-      switchMap(country => this.countriesService.getCountriesByRegion(country))).subscribe( borders => { //2
-      this.countriesByRegion = borders;
+      filter((value: string) => value.length>0), //4
+      switchMap(alphaCode => this.countriesService.getCountryByAlphaCode(alphaCode)), 
+      switchMap(country => this.countriesService.getCountryBordersByCodes(country.borders))).subscribe( countries => { //2
+      this.bordersByCountry = countries;
     });
   }
 
@@ -58,3 +62,4 @@ export class SelectorPageComponent implements OnInit {
 // Por cada valor emitido, se llama a la función de la service, hace la solicitud http para obtener los países que pertenecen al continente
 // y una vez obtenido, se suscribe a la obtención de estos datos.
 // 3-> Si e valor cambió en región, country es un string vacío y se tiene que setear
+// 4-> Si devuelve un true, continúa hacia el switchmap, sino se para la ejecución

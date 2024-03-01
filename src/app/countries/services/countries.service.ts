@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Country, Region, smallCountry} from '../interfaces/country.interfaces';
-import { Observable, map, of, tap } from 'rxjs';
+import { Country, Region, SmallCountry } from '../interfaces/country.interfaces';
+import { Observable, combineLatest, map, of, tap } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
 @Injectable({
@@ -38,8 +38,28 @@ export class CountriesService {
       )
   }
 
-  getCountryBuAlphaCode(alphaCode: string): Observable<smallCountry>{
-    return;
+  getCountryByAlphaCode(alphaCode: string): Observable<SmallCountry>{
+    console.log({alphaCode})
+
+    const url = `${ this.baseUrl}/alpha/${alphaCode}?fields=cca3,name,borders`;
+    return this.http.get<Country>(url).pipe(map( country => ({ //3
+      name: country.name.common,
+      cca3: country.cca3,
+      borders: country.borders ?? []
+    })));
+  }
+
+  getCountryBordersByCodes(borders: string[]): Observable<SmallCountry[]>{
+    if (!borders || borders.length===0) return of([]);
+
+    const countriesRequest: Observable<SmallCountry>[] = []; //almacena observables
+
+    borders.forEach(code =>{
+      const request = this.getCountryByAlphaCode(code);
+      countriesRequest.push(request); 
+      console.log('countryRequest', countriesRequest)
+    });
+    return combineLatest(countriesRequest); //4
   }
 
 }
@@ -48,3 +68,5 @@ export class CountriesService {
 //1-> En este caso muta la relación que tiene con la propiedad original, para que nadie le mute los datos
 //2-> El primer map es una función de RXJS para transformar datos y elsegundo, es el que te hace un nuevo array
 // Crea un nuevo array cuyo contenido es un objeto con los datos de name, cca3 y borders
+//3 -> Tranforma la respuesta de tipo Country en algo como SmallCountry
+//4 -> combineLatest cuando sea llamado mediante subscribe, va a emitir hasta que todos los observables que hay en countriesRequest emitas y se disparen de manera simultánea
