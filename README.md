@@ -1,6 +1,6 @@
 # Selectores
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 15.0.4.
+Se vuelve a usar la api de countries, pero se amplian algunas partes. Hay desplegables anidados, se usan observables, switchmap, combineLatest y se obtienen los nombres de países mediante alphacode a través de llamadas a funciones que devuelven observables.
 
 ## Development server
 
